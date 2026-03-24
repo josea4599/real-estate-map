@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
 import { CssBaseline } from "@mui/material";
+import Providers from "./providers";
+//import ApolloClient from "../components/ApolloWrapper";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -28,8 +30,10 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <AppRouterCacheProvider>
-          <CssBaseline />
-          {children}
+          <Providers>
+            <CssBaseline />
+            {children}
+          </Providers>
         </AppRouterCacheProvider>
       </body>
     </html>

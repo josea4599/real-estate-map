@@ -1,11 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useQuery } from "@apollo/client/react";
 import Map, { Marker, NavigationControl, Popup } from "react-map-gl/mapbox";
 //import Map, { NavigationControl } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { GET_TAX_ASSESSORS } from "../app/graphql/queries";
 
-type PropertyPin = {
+
+type TaxAssessorItem = {
+  PropertyAddressFull: string | null;
+  PropertyLatitude: number | string | null;
+  PropertyLongitude: number | string | null;
+  ATTOM_ID: string | number | null;
+  parcel_id: string | null;
+};
+
+
+type GetTaxAssessorsData = {
+  attomTaxAssessors: {
+    items: TaxAssessorItem[];
+  };
+};
+
+
+
+
+
+/*type PropertyPin = {
   id: number;
   name: string;
   owner: string;
@@ -13,7 +35,7 @@ type PropertyPin = {
   address: string;
   latitude: number;
   longitude: number;
-};
+}; 
 
 const properties: PropertyPin[] = [
   //This is example data for testing purposes and not accurate to real data.
@@ -37,16 +59,37 @@ const properties: PropertyPin[] = [
   
   }
 
-]
+] */
 
 export default function MapView() {
-  const [selectedProperty, setSelectedProperty] = useState<PropertyPin | null>(null);
+  const [selectedProperty, setSelectedProperty] = useState<TaxAssessorItem | null>(null);
+
+  const { loading, error, data } = useQuery<GetTaxAssessorsData>(GET_TAX_ASSESSORS);
+
+  const properties: TaxAssessorItem[] = useMemo(() => {
+    const items = data?.attomTaxAssessors?.items ?? [];
+
+    return items.filter((item: TaxAssessorItem) => {
+      const lat = Number(item.PropertyLatitude);
+      const lng = Number(item.PropertyLongitude);
+      return !Number.isNaN(lat) && !Number.isNaN(lng);
+    });
+  }, [data]);
+
+  if (loading) {
+    return <div style={{ padding: "1rem" }}>Loading map data...</div>;
+  }
+
+  if (error) {
+    return <div style={{ padding: "1rem" }}>Error loading map data.</div>;
+  }
+
   return (
     <Map
       initialViewState={{
         longitude: -118.242766,
         latitude: 34.0536909,
-        zoom: 10
+        zoom: 10,
       }}
       style={{ width: "100%", height: "100%" }}
       mapStyle="mapbox://styles/mapbox/streets-v12"
@@ -56,47 +99,36 @@ export default function MapView() {
 
       {properties.map((property) => (
         <Marker
-          key={property.id}
-          longitude={property.longitude}
-          latitude={property.latitude}
+          key={String(property.ATTOM_ID ?? property.parcel_id)}
+          longitude={Number(property.PropertyLongitude)}
+          latitude={Number(property.PropertyLatitude)}
           anchor="bottom"
           onClick={(e) => {
             e.originalEvent.stopPropagation();
             setSelectedProperty(property);
           }}
         >
-          <div
-            style={{
-              fontSize: "24px",
-              cursor: "pointer",
-              transform: "translateY(-50%)",
-            }}
-            aria-label={property.name}
-            title={property.name}
-          >
-            📍
-          </div>
+          <div style={{ fontSize: "24px", cursor: "pointer" }}>📍</div>
         </Marker>
       ))}
 
       {selectedProperty && (
         <Popup
-          longitude={selectedProperty.longitude}
-          latitude={selectedProperty.latitude}
+          longitude={Number(selectedProperty.PropertyLongitude)}
+          latitude={Number(selectedProperty.PropertyLatitude)}
           anchor="top"
           onClose={() => setSelectedProperty(null)}
           closeOnClick={false}
         >
-          <div style={{ minWidth: "200px" }}>
-            <h3 style={{ margin: "0 0 8px 0" }}>{selectedProperty.name}</h3>
+          <div style={{ minWidth: "220px" }}>
+            <h3 style={{ margin: "0 0 8px 0" }}>
+              {selectedProperty.PropertyAddressFull ?? "No address available"}
+            </h3>
             <p style={{ margin: "0 0 4px 0" }}>
-              <strong>Price:</strong> {selectedProperty.price}
-            </p>
-             <p style={{ margin: "0 0 4px 0" }}>
-              <strong>Owner:</strong> {selectedProperty.owner}
+              <strong>ATTOM ID:</strong> {selectedProperty.ATTOM_ID ?? "N/A"}
             </p>
             <p style={{ margin: 0 }}>
-              <strong>Address:</strong> {selectedProperty.address}
+              <strong>Parcel ID:</strong> {selectedProperty.parcel_id ?? "N/A"}
             </p>
           </div>
         </Popup>
