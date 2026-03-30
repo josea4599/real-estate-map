@@ -2,9 +2,10 @@
 
 import { useState, useMemo } from "react";
 import { useQuery } from "@apollo/client/react";
-import Map, { Marker, NavigationControl, Popup } from "react-map-gl/mapbox";
-//import Map, { NavigationControl } from "react-map-gl/mapbox";
+import Map, { Layer, Marker, NavigationControl, Popup, Source } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
+import type { LayerProps } from "react-map-gl/mapbox";
+import type { MapLayerMouseEvent } from "mapbox-gl";
 import { GET_TAX_ASSESSORS } from "../app/graphql/queries";
 
 
@@ -23,7 +24,8 @@ type GetTaxAssessorsData = {
   };
 };
 
-
+const PARCEL_FILL_LAYER_ID = "parcel-fill-layer";
+const PARCEL_LINE_LAYER_ID = "parcel-line-layer";
 
 
 
@@ -63,6 +65,8 @@ const properties: PropertyPin[] = [
 
 export default function MapView() {
   const [selectedProperty, setSelectedProperty] = useState<TaxAssessorItem | null>(null);
+  const [parcelId, setParcelId] = useState<string | number | null>(null);
+  const [hoveredParcelId, setHoveredParcelId] = useState<string | number | null>(null);
 
   const { loading, error, data } = useQuery<GetTaxAssessorsData>(GET_TAX_ASSESSORS);
 
@@ -84,18 +88,105 @@ export default function MapView() {
     return <div style={{ padding: "1rem" }}>Error loading map data.</div>;
   }
 
+const handleParcelClick = (event: MapLayerMouseEvent) => {
+    const feature = event.features?.[0];
+    if (!feature) return;
+
+    const clickedId = feature.properties?.ID;
+    console.log("Clicked parcel ID: ", clickedId);
+
+
+    if (clickedId !== undefined && clickedId !== null) {
+      setParcelId(clickedId);
+    }
+  };
+
+  const handleParcelHover = (event: MapLayerMouseEvent) => {
+    const feature = event.features?.[0];
+    if (!feature) {
+      setHoveredParcelId(null);
+      return;
+    }
+
+    const hoverId = feature.properties?.ID;
+    setHoveredParcelId(hoverId ?? null);
+  };
+
+  const parcelFillLayer: LayerProps = {
+  id: PARCEL_FILL_LAYER_ID,
+  type: "fill" as const,
+  "source-layer": "attom-parcels",
+  paint: {
+    "fill-color": [
+      "case",
+      ["==", ["get", "ID"], parcelId ?? ""],
+      "#ff9800",
+      ["==", ["get", "ID"], hoveredParcelId ?? ""],
+      "#42a5f5",
+      "#0080ff",
+    ],
+    "fill-opacity": [
+      "case",
+      ["==", ["get", "ID"], parcelId ?? ""],
+      0.5,
+      ["==", ["get", "ID"], hoveredParcelId ?? ""],
+      0.35,
+      0.15,
+    ],
+  },
+};
+
+const parcelLineLayer: LayerProps = {
+  id: PARCEL_LINE_LAYER_ID,
+  type: "line" as const,
+  "source-layer": "attom-parcels",
+  paint: {
+    "line-color": [
+      "case",
+      ["==", ["get", "ID"], parcelId ?? ""],
+      "#e65100",
+      ["==", ["get", "ID"], hoveredParcelId ?? ""],
+      "#1565c0",
+      "#333333",
+    ],
+    "line-width": [
+      "case",
+      ["==", ["get", "ID"], parcelId ?? ""],
+      3,
+      ["==", ["get", "ID"], hoveredParcelId ?? ""],
+      2,
+      1,
+    ],
+  },
+};
+  
+
   return (
     <Map
       initialViewState={{
-        longitude: -118.242766,
-        latitude: 34.0536909,
+        longitude: -74.00594,
+        latitude: 40.71278,
         zoom: 10,
       }}
       style={{ width: "100%", height: "100%" }}
       mapStyle="mapbox://styles/mapbox/streets-v12"
       mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN}
+      interactiveLayerIds={[PARCEL_FILL_LAYER_ID, PARCEL_LINE_LAYER_ID]}
+      onClick={handleParcelClick}
+      onMouseMove={handleParcelHover}
+      onMouseLeave={() => setHoveredParcelId(null)}
+      cursor={hoveredParcelId ? "pointer" : "default"}
+
+
     >
       <NavigationControl position="top-right" />
+
+      <Source id="parcels-source" type="vector" url="mapbox://svayser.parcel-boundaries">
+        <Layer {...parcelFillLayer} />
+        <Layer {...parcelLineLayer} />
+      </Source>
+
+
 
       {properties.map((property) => (
         <Marker
