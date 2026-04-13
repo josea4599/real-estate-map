@@ -88,8 +88,8 @@ export default function MapView({
         ["==", ["get", "ID"], selectedParcelId ?? ""],
         "#ff9800",
         ["==", ["get", "ID"], hoveredParcelId ?? ""],
-        "#42a5f5",
-        "#0080ff",
+        "#4c9ee0",
+        "#0458ad",
       ],
       "fill-opacity": [
         "case",

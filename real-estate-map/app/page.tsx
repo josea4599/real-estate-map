@@ -22,12 +22,23 @@ type ReonomyProperty = {
   year_built: number | null;
   year_renovated: number | null;
   floors: number | null;
+  sum_buildings_nbr: number | null;
+  existing_floor_area_ratio: number | null;
+  commercial_units: number | null;
+  residential_units: number | null;
+  total_units: number | null;
   building_area: number | null;
+  building_class: string | null;
   asset_type: string | null;
   lot_size_sqft: number | null;
+  lot_size_acres: number | null;
   zoning: string | null;
+  msa_name: string | null;
+  fips_county: string | null;
   municipality: string | null;
+  mcd_name: string | null;
   neighborhood_name: string | null;
+  legal_description: string | null;
 };
 
 type GetReonomyPropertyData = {
@@ -36,7 +47,76 @@ type GetReonomyPropertyData = {
   };
 };
 
-const drawerWidth = 260;
+const drawerWidth = 370;
+
+function DetailRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | number | null | undefined;
+}) {
+  return (
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: 2,
+        px: 2,
+        py: 1.1,
+        borderBottom: "1px solid #e5e7eb",
+        alignItems: "start",
+      }}
+    >
+      <Typography
+        variant="body2"
+        sx={{ fontWeight: 600, color: "#111827" }}
+      >
+        {label}
+      </Typography>
+      <Typography
+        variant="body2"
+        sx={{ color: "#374151", textAlign: "right", wordBreak: "break-word" }}
+      >
+        {value ?? "-"}
+      </Typography>
+    </Box>
+  );
+}
+
+function SectionCard({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Box sx={{ mb: 2.5 }}>
+      <Typography
+        variant="subtitle1"
+        sx={{
+          fontWeight: 700,
+          mb: 1,
+          color: "#111827",
+        }}
+      >
+        {title}
+      </Typography>
+      <Paper
+        elevation={0}
+        sx={{
+          border: "1px solid #d1d5db",
+          borderRadius: 2,
+          overflow: "hidden",
+          bgcolor: "#ffffff",
+        }}
+      >
+        {children}
+      </Paper>
+    </Box>
+  );
+}
 
 export default function Home() {
   const [parcelId, setParcelId] = useState<string | number | null>(null);
@@ -50,10 +130,10 @@ export default function Home() {
     skip: !parcelId,
   });
 
-  const selectedParcelDetails = parcelData?.reonomyProperties?.items?.[0] ?? null;
+  const d = parcelData?.reonomyProperties?.items?.[0] ?? null;
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh" }}>
+    <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "#f3f4f6" }}>
       <AppBar position="fixed" sx={{ zIndex: 1201 }}>
         <Toolbar>
           <Typography variant="h6" noWrap component="div">
@@ -70,83 +150,130 @@ export default function Home() {
           [`& .MuiDrawer-paper`]: {
             width: drawerWidth,
             boxSizing: "border-box",
+            bgcolor: "#f9fafb",
+            borderRight: "1px solid #e5e7eb",
           },
         }}
       >
         <Toolbar />
-        <Box sx={{ overflow: "auto" }}>
+        <Box sx={{ overflow: "auto", height: "100%" }}>
           
 
           <Divider />
 
           <Box sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Parcel Details
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 700, mb: 2, color: "#111827" }}
+            >
+              Building & Lot Details
             </Typography>
 
             {!parcelId && (
-              <Typography variant="body2">
-                Click a parcel on the map to view details.
-              </Typography>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  border: "1px solid #d1d5db",
+                  bgcolor: "#fff",
+                }}
+              >
+                <Typography variant="body2">
+                  Click a parcel on the map to view details.
+                </Typography>
+              </Paper>
             )}
 
             {parcelLoading && (
-              <Typography variant="body2">
-                Loading parcel details...
-              </Typography>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  border: "1px solid #d1d5db",
+                  bgcolor: "#fff",
+                }}
+              >
+                <Typography variant="body2">
+                  Loading parcel details...
+                </Typography>
+              </Paper>
             )}
 
             {parcelError && (
-              <Typography variant="body2">
-                Error loading parcel details.
-              </Typography>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  border: "1px solid #d1d5db",
+                  bgcolor: "#fff",
+                }}
+              >
+                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+                  Error loading parcel details: {parcelError.message}
+                </Typography>
+              </Paper>
             )}
 
-            {!parcelLoading && !parcelError && parcelId && !selectedParcelDetails && (
-              <Typography variant="body2">
-                No parcel details found.
-              </Typography>
-            )}
-
-            {!parcelLoading && !parcelError && selectedParcelDetails && (
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  <strong>Parcel ID:</strong> {selectedParcelDetails.parcel_id ?? "N/A"}
-                </Typography>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  <strong>Year Built:</strong> {selectedParcelDetails.year_built ?? "N/A"}
-                </Typography>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  <strong>Year Renovated:</strong> {selectedParcelDetails.year_renovated ?? "N/A"}
-                </Typography>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  <strong>Floors:</strong> {selectedParcelDetails.floors ?? "N/A"}
-                </Typography>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  <strong>Building Area:</strong> {selectedParcelDetails.building_area ?? "N/A"}
-                </Typography>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  <strong>Asset Type:</strong> {selectedParcelDetails.asset_type ?? "N/A"}
-                </Typography>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  <strong>Lot Size (sqft):</strong> {selectedParcelDetails.lot_size_sqft ?? "N/A"}
-                </Typography>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  <strong>Zoning:</strong> {selectedParcelDetails.zoning ?? "N/A"}
-                </Typography>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  <strong>Municipality:</strong> {selectedParcelDetails.municipality ?? "N/A"}
-                </Typography>
+            {!parcelLoading && !parcelError && parcelId && !d && (
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  border: "1px solid #d1d5db",
+                  bgcolor: "#fff",
+                }}
+              >
                 <Typography variant="body2">
-                  <strong>Neighborhood:</strong> {selectedParcelDetails.neighborhood_name ?? "N/A"}
+                  No parcel details found.
                 </Typography>
-              </Box>
+              </Paper>
+            )}
+
+            {!parcelLoading && !parcelError && d && (
+              <>
+                <SectionCard title="Building">
+                  <DetailRow label="Year Built" value={d.year_built} />
+                  <DetailRow label="Year Renovated" value={d.year_renovated} />
+                  <DetailRow label="Stories" value={d.floors} />
+                  <DetailRow label="Number of Buildings" value={d.sum_buildings_nbr} />
+                  <DetailRow
+                    label="Existing Floor Area Ratio"
+                    value={d.existing_floor_area_ratio}
+                  />
+                  <DetailRow label="Commercial Units" value={d.commercial_units} />
+                  <DetailRow label="Residential Units" value={d.residential_units} />
+                  <DetailRow label="Total Units" value={d.total_units} />
+                  <DetailRow label="Building Area" value={d.building_area} />
+                </SectionCard>
+
+                <SectionCard title="Lot">
+                  
+                  <DetailRow label="Property Type" value={d.asset_type} />
+                  <DetailRow label="Lot Area SF" value={d.lot_size_sqft} />
+                  <DetailRow label="Lot Area Acres" value={d.lot_size_acres} />
+                </SectionCard>
+
+                <SectionCard title="Location">
+                  <DetailRow label="Metropolitan Statistical Area" value={d.msa_name} />
+                  <DetailRow label="County" value={d.fips_county} />
+                  <DetailRow label="Municipality" value={d.municipality} />
+                  <DetailRow label="Minor Civil Division" value={d.mcd_name} />
+                  <DetailRow label="Neighborhood" value={d.neighborhood_name} />
+                  <DetailRow label="Legal" value={d.legal_description} />
+                </SectionCard>
+
+            
+              </>
             )}
           </Box>
         </Box>
       </Drawer>
 
-      <Box component="main" sx={{ flexGrow: 1, p: 3, bgcolor: "#f5f5f5" }}>
+      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <Toolbar />
         <Typography variant="h4" gutterBottom>
           Real Estate Map
@@ -155,7 +282,7 @@ export default function Home() {
         <Paper
           elevation={3}
           sx={{
-            height: 550,
+            height: 650,
             borderRadius: 2,
             overflow: "hidden",
           }}

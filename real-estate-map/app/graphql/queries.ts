@@ -31,6 +31,16 @@ export const GET_REONOMY_PROPERTY_BY_PARCEL = gql`
         zoning
         municipality
         neighborhood_name
+        lot_size_acres
+        sum_buildings_nbr
+        commercial_units
+        residential_units
+        total_units
+        existing_floor_area_ratio
+        msa_name
+        fips_county
+        mcd_name
+        legal_description
       }
     }
   }
