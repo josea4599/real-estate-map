@@ -27,6 +27,18 @@ This project is a full=stack mapping application built with modern web technolog
 ##  Property Details Panel
 * Sidebar dynamically updates with selected parcel data
 * Organized into structured sections(Building, Lot, Location)
+# Setup & Installation
+## Using a terminal CLI:
+* git clone https://github.com/your-username/real-estate-map.git
+* cd real-estate-map
+## Install Dependenciec
+* npm install
+## Set Up Environment Variables
+* NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=map_box_token
+## Run Development Server
+* npm run dev
+## Open
+* http://localhost:3000
 # Screenshots
 <img width="1830" height="862" alt="Screenshot 2026-04-27 150222" src="https://github.com/user-attachments/assets/a059ca9c-f613-416b-a652-23b1273816da" />
 
