@@ -3,7 +3,7 @@ This project is an interactive web application that visualizes real estate parce
 
 Link: https://real-estate-map-five.vercel.app
 # Overview
-This project is a full=stack mapping application built with modern web technologies. Users can:
+This project is a full-stack mapping application built with modern web technologies. Users can:
 * View real estate parcels on an interactive map
 * Click parcels to see detailed property information
 
