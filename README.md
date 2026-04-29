@@ -31,7 +31,7 @@ This project is a full=stack mapping application built with modern web technolog
 ## Using a terminal CLI:
 * git clone https://github.com/your-username/real-estate-map.git
 * cd real-estate-map
-## Install Dependenciec
+## Install Dependencies
 * npm install
 ## Set Up Environment Variables
 * NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=map_box_token
