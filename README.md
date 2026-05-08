@@ -29,7 +29,7 @@ This project is a full-stack mapping application built with modern web technolog
 * Organized into structured sections(Building, Lot, Location)
 # Setup & Installation
 ## Using a terminal CLI:
-* git clone https://github.com/your-username/real-estate-map.git
+* git clone https://github.com/josea4599/real-estate-map
 * cd real-estate-map
 ## Install Dependencies
 * npm install
