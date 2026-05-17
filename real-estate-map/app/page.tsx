@@ -1,21 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@apollo/client/react";
+import { useLazyQuery, useQuery } from "@apollo/client/react";
 import {
   AppBar,
   Box,
   Drawer,
-  List,
-  ListItem,
-  ListItemText,
   Toolbar,
   Typography,
   Paper,
   Divider,
+  TextField,
+  Button,
+  Stack,
+  Dialog,
+  DialogTitle,
+  DialogContent,
 } from "@mui/material";
 import MapView from "../components/MapView";
-import { GET_REONOMY_PROPERTY_BY_PARCEL } from "./graphql/queries";
+import {
+  GET_REONOMY_PROPERTY_BY_PARCEL,
+  GET_PARCEL_BY_LOCATION,
+} from "./graphql/queries";
 
 type ReonomyProperty = {
   parcel_id: string | null;
@@ -46,6 +52,14 @@ type GetReonomyPropertyData = {
     items: ReonomyProperty[];
   };
 };
+
+type GetParcelByLocationData = {
+  executeGetParcelByLocation: {
+    parcel_id: string | null;
+  } | null;
+};
+
+
 
 const drawerWidth = 370;
 
@@ -120,6 +134,72 @@ function SectionCard({
 
 export default function Home() {
   const [parcelId, setParcelId] = useState<string | number | null>(null);
+  const [searchAddress, setSearchAddress] = useState("");
+  const [selectedCoordinates, setSelectedCoordinates] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+  const [streetViewOpen, setStreetViewOpen] = useState(false);
+  const [selectedAddressLabel, setSelectedAddressLabel] = useState("");
+
+  const [fetchParcelByLocation, { loading: parcelLookupLoading, error: parcelLookupError }] =
+    useLazyQuery<GetParcelByLocationData>(GET_PARCEL_BY_LOCATION);
+
+  const handleAddressSearch = async () => {
+    if (!searchAddress.trim()) return;
+
+    try {
+      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+      const encoded = encodeURIComponent(searchAddress);
+
+      const response = await fetch(
+  `https://maps.googleapis.com/maps/api/geocode/json?address=${encoded}&key=${apiKey}`
+);
+console.log("Google API key exists:", !!apiKey);
+
+const geocodeData = await response.json();
+
+console.log("Geocode response:", geocodeData);
+
+if (!apiKey) {
+  alert("Google Maps API key is missing.");
+  return;
+}
+
+if (geocodeData.status !== "OK") {
+  alert(`Geocoding failed: ${geocodeData.status}${geocodeData.error_message ? ` - ${geocodeData.error_message}` : ""}`);
+  return;
+}
+
+const result = geocodeData.results?.[0];
+if (!result) {
+  alert("Address not found.");
+  return;
+}
+
+      const latitude = result.geometry.location.lat;
+      const longitude = result.geometry.location.lng;
+
+      setSelectedCoordinates({ latitude, longitude });
+      setSelectedAddressLabel(result.formatted_address);
+
+      const queryResult = await fetchParcelByLocation({
+        variables: { latitude, longitude },
+      });
+
+      const foundParcelId =
+        queryResult.data?.executeGetParcelByLocation?.parcel_id ?? null;
+
+      if (foundParcelId) {
+        setParcelId(foundParcelId);
+      } else {
+        alert("No parcel found for this address.");
+      }
+    } catch (err) {
+      console.error("Address search error:", err);
+      alert("Unable to search address.");
+    }
+  };
 
   const {
     data: parcelData,
@@ -137,7 +217,7 @@ export default function Home() {
       <AppBar position="fixed" sx={{ zIndex: 1201 }}>
         <Toolbar>
           <Typography variant="h6" noWrap component="div">
-            Real Estate
+            Real Estate Map Data
           </Typography>
         </Toolbar>
       </AppBar>
@@ -157,8 +237,6 @@ export default function Home() {
       >
         <Toolbar />
         <Box sx={{ overflow: "auto", height: "100%" }}>
-          
-
           <Divider />
 
           <Box sx={{ p: 2 }}>
@@ -180,7 +258,7 @@ export default function Home() {
                 }}
               >
                 <Typography variant="body2">
-                  Click a parcel on the map to view details.
+                  Click a parcel on the map or search for an address to view details.
                 </Typography>
               </Paper>
             )}
@@ -251,7 +329,6 @@ export default function Home() {
                 </SectionCard>
 
                 <SectionCard title="Lot">
-                  
                   <DetailRow label="Property Type" value={d.asset_type} />
                   <DetailRow label="Lot Area SF" value={d.lot_size_sqft} />
                   <DetailRow label="Lot Area Acres" value={d.lot_size_acres} />
@@ -265,8 +342,6 @@ export default function Home() {
                   <DetailRow label="Neighborhood" value={d.neighborhood_name} />
                   <DetailRow label="Legal" value={d.legal_description} />
                 </SectionCard>
-
-            
               </>
             )}
           </Box>
@@ -275,9 +350,45 @@ export default function Home() {
 
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <Toolbar />
+
         <Typography variant="h4" gutterBottom>
           Real Estate Map
         </Typography>
+
+        <Paper elevation={2} sx={{ p: 2, mb: 2, borderRadius: 2 }}>
+          <Stack direction="row" spacing={2}>
+            <TextField
+              fullWidth
+              label="Search by address"
+              value={searchAddress}
+              onChange={(e) => setSearchAddress(e.target.value)}
+            />
+            <Button variant="contained" onClick={handleAddressSearch}>
+              Search
+            </Button>
+          </Stack>
+
+          {parcelLookupLoading && (
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              Looking up parcel...
+            </Typography>
+          )}
+
+          {parcelLookupError && (
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              Error finding parcel: {parcelLookupError.message}
+            </Typography>
+          )}
+
+          <Button
+            variant="outlined"
+            sx={{ mt: 2 }}
+            disabled={!selectedCoordinates}
+            onClick={() => setStreetViewOpen(true)}
+          >
+            Open Street View
+          </Button>
+        </Paper>
 
         <Paper
           elevation={3}
@@ -287,9 +398,32 @@ export default function Home() {
             overflow: "hidden",
           }}
         >
-          <MapView setParcelId={setParcelId} />
+          <MapView setParcelId={setParcelId} activeParcelId={parcelId} />
         </Paper>
       </Box>
+
+      <Dialog
+        open={streetViewOpen}
+        onClose={() => setStreetViewOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Street View</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ mb: 2 }}>
+            {selectedAddressLabel || "Selected address"}
+          </Typography>
+
+          {selectedCoordinates && (
+            <Box
+              component="img"
+              alt="Street View"
+              sx={{ width: "100%", borderRadius: 2 }}
+              src={`https://maps.googleapis.com/maps/api/streetview?size=900x500&location=${selectedCoordinates.latitude},${selectedCoordinates.longitude}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }

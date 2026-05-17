@@ -27,16 +27,20 @@ const PARCEL_LINE_LAYER_ID = "parcel-line-layer";
 
 export default function MapView({
   setParcelId,
+  activeParcelId,
 }: {
   setParcelId: (id: string | number | null) => void;
+  activeParcelId?: string | number | null;
 }) {
-  const [selectedProperty, setSelectedProperty] = useState<TaxAssessorItem | null>(null);
-  const [selectedParcelId, setSelectedParcelId] = useState<string | number | null>(null);
-  const [hoveredParcelId, setHoveredParcelId] = useState<string | number | null>(null);
+const [clickedParcelId, setClickedParcelId] = useState<string | number | null>(null);
+//const [selectedParcelId, setSelectedParcelId] = useState<string | number | null>(null);
+const [hoveredParcelId, setHoveredParcelId] = useState<string | number | null>(null);
+
+  const selectedParcelId = activeParcelId ?? clickedParcelId;
 
   const { loading, error, data } = useQuery<GetTaxAssessorsData>(GET_TAX_ASSESSORS);
 
-  const properties: TaxAssessorItem[] = useMemo(() => {
+ const properties: TaxAssessorItem[] = useMemo(() => {
     const items = data?.attomTaxAssessors?.items ?? [];
 
     return items.filter((item: TaxAssessorItem) => {
@@ -46,13 +50,22 @@ export default function MapView({
     });
   }, [data]);
 
+  console.log("Map query data:", data);
+  console.log("Map query error:", error);
+  console.log("Marker properties loaded:", properties.length);
+
   if (loading) {
     return <div style={{ padding: "1rem" }}>Loading map data...</div>;
   }
 
-  if (error) {
-    return <div style={{ padding: "1rem" }}>Error loading map data.</div>;
-  }
+if (error) {
+  return (
+    <div style={{ padding: "1rem", whiteSpace: "pre-wrap" }}>
+      Error loading map data: {error.message}
+    </div>
+  );
+}
+
 
   const handleParcelClick = (event: MapLayerMouseEvent) => {
     const feature = event.features?.[0];
@@ -62,7 +75,7 @@ export default function MapView({
     console.log("Clicked parcel ID:", clickedId);
 
     if (clickedId !== undefined && clickedId !== null) {
-      setSelectedParcelId(clickedId);
+      setClickedParcelId(clickedId);
       setParcelId(clickedId);
     }
   };

@@ -45,3 +45,11 @@ export const GET_REONOMY_PROPERTY_BY_PARCEL = gql`
     }
   }
 `;
+
+export const GET_PARCEL_BY_LOCATION = gql`
+  query GetParcelByLocation($latitude: Single, $longitude: Single) {
+    executeGetParcelByLocation(longitude: $longitude, latitude: $latitude) {
+      parcel_id: ID
+    }
+  }
+`;
